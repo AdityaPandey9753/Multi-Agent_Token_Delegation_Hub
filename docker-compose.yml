@@ -11,8 +11,8 @@ services:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
-    ports: 
-      - "${POSTGRES_PORT}:5432" 
+    ports:
+      - "${POSTGRES_PORT}:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -20,6 +20,25 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+
+  # OpenClaw Gateway - Next.js 14 App Router.
+  # This is the local-AI surface. It talks to Ollama over /v1 and
+  # exposes a single /api/gateway/chat endpoint. The Flask server
+  # (next) is the only component that calls it directly.
+  gateway:
+    build: ./openclaw-gateway
+    container_name: app_openclaw_gateway
+    restart: always
+    env_file:
+      - .env.prod
+    ports:
+      - "3001:3001"
+    environment:
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL}
+      OLLAMA_MODEL: ${OLLAMA_MODEL}
+      PORT: "3001"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
 
   server:
     build: ./server
@@ -30,20 +49,23 @@ services:
     ports:
       - "5000:5000"
     environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
       FLASK_ENV: production
+      GATEWAY_CHAT_URL: ${GATEWAY_CHAT_URL}
     depends_on:
       db:
         condition: service_healthy
+      gateway:
+        condition: service_started
 
   client:
     build: ./client
     container_name: app_react_vite_client
     restart: always
     ports:
-      - "3000:80" # Maps your laptop's port 3000 to Nginx's internal port 80
+      - "3000:80"  # Maps your laptop's port 3000 to Nginx's internal port 80
     depends_on:
       - server
-  
+
 volumes:
-  pgdata: # Added the missing trailing colon here
+  pgdata:

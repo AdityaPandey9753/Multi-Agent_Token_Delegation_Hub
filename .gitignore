@@ -1,1 +1,31 @@
+# Node
+node_modules/
+.next/
+dist/
+build/
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+
+# Environment
+.env
+.env.local
 .env.prod
+.env.dev
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+
+# Vault key
+.vault.key
+
+# SQLite
+*.db
+
+# TypeScript build info
+*.tsbuildinfo
